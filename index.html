@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>QoE Analyzer </title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{margin:0;font-family:Segoe UI;background:#0b132b;color:white;}
+.container{display:flex;height:100vh;}
+
+.sidebar{
+    width:220px;
+    background:#0f172a;
+    padding:20px;
+}
+.sidebar button{
+    width:100%;
+    margin:10px 0;
+    padding:10px;
+    background:#1e293b;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+
+.content{flex:1;padding:20px;overflow:auto;}
+
+.card{
+    display:inline-block;
+    width:18%;
+    background:#1e293b;
+    padding:10px;
+    margin:5px;
+    text-align:center;
+    border-radius:10px;
+}
+
+.analysis-box{
+    background:#1e293b;
+    padding:15px;
+    border-radius:10px;
+    margin-top:15px;
+}
+
+.insights-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:15px;
+}
+
+table{width:100%;border-collapse:collapse;}
+td,th{padding:8px;border-bottom:1px solid #444;}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h2>Quality Of Experience</h2>
+<button onclick="show('dashboard')">Dashboard</button>
+<button onclick="show('packets')">Packets</button>
+<button onclick="show('analysis')">Analysis</button>
+<button onclick="show('insights')">Insights</button>
+</div>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+<h2>Dashboard</h2>
+
+<button onclick="startCap()">Start</button>
+<button onclick="stopCap()">Stop</button>
+<button onclick="restartCap()">Restart</button>
+
+<br><br>
+
+<input type="file" id="file">
+<button onclick="upload()">Upload PCAP</button>
+
+<div>
+<div class="card">Delay<br><span id="delay">0</span></div>
+<div class="card">Jitter<br><span id="jitter">0</span></div>
+<div class="card">Throughput<br><span id="throughput">0</span></div>
+<div class="card">QoE<br><span id="qoe">0</span></div>
+</div>
+
+<h3 id="status">🔴 Stopped</h3>
+</div>
+
+<!-- PACKETS -->
+<div id="packets" style="display:none">
+<h2>Packets</h2>
+<table>
+<tr><th>Time</th><th>Src</th><th>Dst</th><th>Protocol</th><th>Size</th></tr>
+<tbody id="table"></tbody>
+</table>
+</div>
+
+<!-- ANALYSIS -->
+<div id="analysis" style="display:none">
+<h2>Analysis</h2>
+<div class="analysis-box">
+<canvas id="qoeChart"></canvas>
+</div>
+</div>
+
+<!-- INSIGHTS -->
+<div id="insights" style="display:none">
+
+<h2>Insights</h2>
+
+<div class="insights-grid">
+
+<div class="analysis-box">
+<h3>Summary</h3>
+<p id="summary"></p>
+</div>
+
+<div class="analysis-box">
+<h3>Network Health</h3>
+<p id="health"></p>
+</div>
+
+<div class="analysis-box">
+<h3>Issues</h3>
+<p id="issues"></p>
+</div>
+
+<div class="analysis-box">
+<h3>Recommendations</h3>
+<p id="recommend"></p>
+</div>
+
+<div class="analysis-box">
+<h3>Top IP</h3>
+<p id="topip"></p>
+</div>
+
+
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+// NAVIGATION
+function show(section){
+    ["dashboard","packets","analysis","insights"].forEach(id=>{
+        document.getElementById(id).style.display="none";
+    });
+    document.getElementById(section).style.display="block";
+}
+
+let interval = null;
+
+// START
+function startCap(){
+    fetch("/start",{method:"POST"});
+    document.getElementById("status").innerText = "🟢 Capturing...";
+
+    if(interval) return;
+
+    interval = setInterval(()=>{
+        fetch("/metrics")
+        .then(r=>r.json())
+        .then(update);
+    },2000);
+}
+
+// STOP
+function stopCap(){
+    fetch("/stop",{method:"POST"});
+    document.getElementById("status").innerText = "🔴 Stopped";
+
+    clearInterval(interval);
+    interval = null;
+}
+
+// RESTART
+function restartCap(){
+    stopCap();
+
+    ["delay","jitter","throughput","loss","qoe"].forEach(id=>{
+        document.getElementById(id).innerText="0";
+    });
+
+    chart.data.labels=[];
+    chart.data.datasets.forEach(d=>d.data=[]);
+    chart.update();
+
+    document.getElementById("table").innerHTML="";
+    document.getElementById("summary").innerText="";
+    document.getElementById("issues").innerText="";
+    document.getElementById("recommend").innerText="";
+    document.getElementById("health").innerText="";
+    document.getElementById("topip").innerText="";
+    
+
+    document.getElementById("status").innerText="🔄 Restarted";
+}
+
+// UPLOAD
+function upload(){
+    let f=new FormData();
+    f.append("file",document.getElementById("file").files[0]);
+
+    fetch("/upload",{method:"POST",body:f})
+    .then(r=>r.json())
+    .then(update);
+}
+
+// CHART
+const ctx=document.getElementById("qoeChart").getContext("2d");
+
+let chart=new Chart(ctx,{
+    type:"line",
+    data:{
+        labels:[],
+        datasets:[
+            {
+                label:"QoE",
+                data:[],
+                borderColor:"#00ff88",
+                backgroundColor:"rgba(0,255,136,0.1)",
+                tension:0.4,
+                yAxisID:'y1',
+                fill:false
+            },
+            {
+                label:"Delay (ms)",
+                data:[],
+                borderColor:"#ffb300",
+                tension:0.4,
+                yAxisID:'y2'
+            },
+            {
+                label:"Jitter (ms)",
+                data:[],
+                borderColor:"#00bfff",
+                tension:0.4,
+                yAxisID:'y2'
+            },
+            {
+                label:"Throughput (KB/s)",
+                data:[],
+                borderColor:"#ff4d4d",
+                tension:0.4,
+                yAxisID:'y3'
+            }
+        ]
+    },
+    options:{
+        responsive:true,
+        plugins:{
+            legend:{labels:{color:"white"}}
+        },
+        scales:{
+            x:{ticks:{color:"white"}},
+            y1:{position:"left",min:0,max:5},
+            y2:{position:"right",grid:{drawOnChartArea:false}},
+            y3:{display:false}
+        }
+    }
+});
+
+
+// UPDATE
+function update(d){
+
+let delayMs=(Number(d.delay)||0)*1000;
+let jitterMs=(Number(d.jitter)||0)*1000;
+let throughputKB=Number(d.throughput)||0;
+
+// Dashboard
+document.getElementById("delay").innerText=delayMs.toFixed(2)+" ms";
+document.getElementById("jitter").innerText=jitterMs.toFixed(2)+" ms";
+document.getElementById("throughput").innerText=throughputKB.toFixed(2)+" KB/s";
+document.getElementById("qoe").innerText=d.qoe;
+
+// 🚨 Alert
+if(delayMs > 50 || jitterMs > 30){
+    document.getElementById("status").innerText = "🚨 Network Unstable";
+}
+
+// Graph
+let t=new Date().toLocaleTimeString();
+chart.data.labels.push(t);
+
+chart.data.datasets[0].data.push(d.qoe);
+chart.data.datasets[1].data.push(delayMs);
+chart.data.datasets[2].data.push(jitterMs);
+chart.data.datasets[3].data.push(throughputKB);
+
+if(chart.data.labels.length>10){
+    chart.data.labels.shift();
+    chart.data.datasets.forEach(ds=>ds.data.shift());
+}
+chart.update();
+
+// Table
+let table=document.getElementById("table");
+table.innerHTML="";
+d.packets.forEach(p=>{
+table.innerHTML+=`
+<tr>
+<td>${p.time.toFixed(2)}</td>
+<td>${p.src}</td>
+<td>${p.dst}</td>
+<td>${p.protocol}</td>
+<td>${p.size}</td>
+</tr>`;
+});
+
+// Summary
+document.getElementById("summary").innerHTML=`
+Delay: ${delayMs.toFixed(2)} ms<br>
+Jitter: ${jitterMs.toFixed(2)} ms<br>
+Throughput: ${throughputKB.toFixed(2)} KB/s<br>
+QoE: ${d.qoe}/5<br>
+Packets: ${d.packets.length}
+`;
+
+// Issues
+let issues = [];
+
+if (delayMs > 50) issues.push("⚠ High Delay");
+if (jitterMs > 30) issues.push("⚠ High Jitter");
+if (throughputKB < 50) issues.push("⚠ Low Throughput");
+
+document.getElementById("issues").innerHTML =
+  issues.length ? issues.join("<br>") : "✅ No issues";
+
+// Recommendations (ONLY based on issues)
+let rec = "";
+
+if (jitterMs > 30) {
+  rec += "• Move closer to WiFi<br>";
+  rec += "• Reduce number of devices using internet<br>";
+}
+
+if (throughputKB < 50) {
+  rec += "• Use faster internet plan<br>";
+  rec += "• Stop downloads and background apps<br>";
+}
+
+if (delayMs > 50) {
+  rec += "• Use wired connection (Ethernet)<br>";
+}
+
+if (rec === "") {
+  rec = "✅ Everything is working fine";
+}
+
+document.getElementById("recommend").innerHTML = rec;
+
+// Health
+let health="🔴 Poor";
+if(d.qoe>=4) health="🟢 Excellent";
+else if(d.qoe>=3) health="🟡 Good";
+
+document.getElementById("health").innerHTML=health;
+
+// Top IP
+document.getElementById("topip").innerHTML="Top Active IP: "+d.top_ip;
+
+}
+
+</script>
+
+</body>
+</html>
