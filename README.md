@@ -1,58 +1,36 @@
-# QoE Network Traffic Analyzer
+##Quality of Experience Network Traffic Analyzer
 
-I made a web application that helps us see what is happening on our network in time. This application uses Flask. It can look at the packets that are going through our network. It can also look at files that we upload to it. The application then calculates some things about our network like how long it takes for things to get from one place to another and how good the quality of the experience is.
-
----
+A web-based application I developed using Flask and Scapy to monitor and analyze network traffic in time. This system captures packets or processes uploaded PCAP files to evaluate network performance by calculating key Quality of Experience metrics such as Delay, Jitter, Throughput and QoE Score.
 
 ## Features
 
-- We can upload files. The application will look at them
+- It can capture network traffic.
 
-- The application can look at the packets that are going through our network in time
+- You can. Analyze PCAP files.
 
-- It has a dashboard that shows us what is happening on our network
+- The system calculates Delay, Jitter and Throughput.
 
-- It calculates things like:
+- It computes a QoE Score on a scale of 1 to 5.
 
-How long it takes for things to get from one place to another
+- The application displays source IP, destination IP, protocol and packet size.
 
-How much the delay changes
+- It identifies the active source IP.
 
-How much data is being sent
+- There's a user- web interface for network monitoring.
 
-The QoE score, which is a number from 1 to 5 that tells us how good the quality of the experience is
+## 🛠️ Technologies Used
 
-- It shows us details about the packets like:
+- Python
 
-Where they are coming from
+- Flask
 
-Where they are going to
+- Scapy
 
-What kind of protocol they are using
+- HTML
 
-How big they are
+- CSS
 
-- It tells us which IP address is sending the most packets
-
-- The application is simple and easy to use and it works well on devices
-
----
-
-## Technologies Used
-
-- Python is the programming language I used
-
-- Flask is the framework I used to make the web application
-
-- Scapy is the library I used to look at the packets
-
-- HTML is the language I used to make the web pages
-
-- CSS is the language I used to make the web pages look good
-
-- JavaScript is the language I used to make the web pages interactive
-
----
+- JavaScript
 
 ## Project Structure
 
@@ -60,33 +38,27 @@ How big they are
 
 QOE_Project/
 
-│
+│── app.py
 
-├── app.py
+│── templates/
 
-├── templates/
+│     └── index.html
 
-│   └── index.html
+│── static/
 
-├── static/
+│     ├── css/
 
-│   ├── css/
+│     ├── js/
 
-│   ├── js/
+│     └── images/
 
-│   └── images/
-
-├── requirements.txt
-
-└── README.md
+── README.md
 
 ```
 
----
+##  How to Run
 
-## Installation
-
-### 1. Get the code from the internet
+1. First clone this repository:
 
 ```bash
 
@@ -94,7 +66,7 @@ git clone https://github.com/yourusername/QOE_Project.git
 
 ```
 
-### 2. Go to the project folder
+2. Then navigate to the project folder:
 
 ```bash
 
@@ -102,15 +74,7 @@ cd QOE_Project
 
 ```
 
-### 3. Get the packages we need
-
-```bash
-
-pip install -r requirements.txt
-
-```
-
-### 4. Start the application
+3. Next run the application:
 
 ```bash
 
@@ -118,7 +82,7 @@ python app.py
 
 ```
 
-### 5. Open the application in our browser
+4. Finally open your browser. Visit:
 
 ```
 
@@ -126,64 +90,40 @@ http://127.0.0.1:5000
 
 ```
 
----
+##  QoE Metrics
 
-## QoE Calculation
+The application uses the following metrics to evaluate network performance:
 
-The QoE Network Traffic Analyzer calculates the Quality of Experience using the QoE Network Traffic Analyzer. It looks at things like:
+- **Delay** measures packet transmission time.
 
-- How long it takes for things to get from one place to another
+- **Jitter** measures variation in delay.
 
-- How much the delay changes
+- **Throughput** calculates the rate of data transfer.
 
-- How much data is being sent
+- **QoE Score** provides a quality rating on a scale of 1 (Poor) to 5 (Excellent).
 
-The final QoE score is a number from 1 to 5 where 1's poor and 5 is excellent.
+##  Future Enhancements
 
----
+Some ideas for enhancements include:
 
-## Application Functions
+- Adding interactive graphs and charts.
 
-- We can start looking at packets in time
+- Using Machine Learning to predict QoE.
 
-- We can stop looking at packets
+- Classifying traffic.
 
-- We can upload files
+- Exporting analysis reports.
 
-- We can look at information about the packets
+- Integrating a database.
 
-- We can look at how long it takes for things to get from one place to another and how much the delay changes and how much data is being sent
+- Adding user authentication.
 
-- We can calculate the QoE score
-
-- We can see which IP address is sending the most packets
-
----
-
-## Future Improvements
-
-- We can use machine learning to predict the Quality of Experience
-
-- We can classify the traffic
-
-- We can make interactive charts and graphs
-
-- We can add user authentication
-
-- We can store reports in a database
-
-- We can export reports as PDF files
-
----
-
-## Author
+##  Author
 
 **Deepu M**
 
-I studied Computer Science and Engineering.
-
----
+B.Tech Computer Science and Engineering
 
 ## License
 
-I made this project for research purposes. The QoE Network Traffic Analyzer is, for learning and research.
+This project is, for academic purposes only.
